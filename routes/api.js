@@ -25,25 +25,28 @@ module.exports = function (app) {
     })
     
     .post(function (req, res){
+      if (!req.body.hasOwnProperty('title') || req.body.title == "") {
+        res.json("missing required field title")
+        return
+      }
       let title = req.body.title;
       let Library = model('Library', projectSchema)
       let book = new Library({
         title: title,
       })
-      book.save(function(err) {
+      book.save(function(err, book) {
         if (err) {
-          res.send('mising required field title')
-          return
+          throw err
         }
-        res.send({_id: book._id, title: book.title})
+        res.json({title: book.title, _id: book._id})
       })
       //response will contain new book object including atleast _id and title
     })
-    
+
     .delete(function(req, res){
       let Library = model('Library', projectSchema)
       Library.deleteMany({}).then(function(){
-        res.send("complete delete successful"); // Success
+        res.json("complete delete successful"); // Success
       })
       //if successful response will be 'complete delete successful'
     });
@@ -59,7 +62,7 @@ module.exports = function (app) {
           throw err
         }
         if (!book) {
-          res.send("no book exist")
+          res.json("no book exists")
           return
         } else {
           res.json({
@@ -76,7 +79,7 @@ module.exports = function (app) {
 
     .post(function(req, res){
       if (!req.body.hasOwnProperty('comment') || req.body.comment == "") {
-        res.send("missing required field comment")
+        res.json("missing required field comment")
         return
       }
       let bookid = req.params.id;
@@ -87,28 +90,31 @@ module.exports = function (app) {
           throw err
         }
         if (!book) {
-          res.send("no book exists")
+          res.json("no book exists")
           return
         }
         book.comments.push(comment)
         book.commentcount = book.commentcount + 1 
-        book.save(function (err, newBook){
+        book.save(function (err, book){
           if (err) throw err
-          res.json(newBook)
+          res.json(book)
         })
       })
-      //json res format same as .get
+      // json res format same as .get
     })
     
     .delete(function(req, res){
       let bookid = req.params.id;
       let Library = model('Library', projectSchema)
-      Library.deleteOne({_id: bookid}, function(err) {
+      Library.deleteOne({_id: bookid}, function(err, book) {
         if (err) {
-          res.send("no book exists")
-          return
+          throw err
         }
-        res.send("delete successful")
+        if (book.deletedCount == 1){
+          res.json("delete successful")
+        } else {
+          res.json("no book exists")
+        }
       })
       //if successful response will be 'delete successful'
     });
